@@ -32,7 +32,10 @@ jobs:
           context: .
           tags: hieupth/minicuda:11.6.2-runtime
           build-args: |
-            TARGET_RUNTIME=runtime
+            NV_CUDA=11.6.2
+            NV_CUDNN=8
+            NV_OS=ubuntu20.04
+            NV_FLAVOR=runtime
       -
         name: Build and push devel image
         uses: docker/build-push-action@v3
@@ -41,4 +44,7 @@ jobs:
           context: .
           tags: hieupth/minicuda:11.6.2-devel
           build-args: |
-            TARGET_RUNTIME=devel
+            NV_CUDA=11.6.2
+            NV_CUDNN=8
+            NV_OS=ubuntu20.04
+            NV_FLAVOR=devel
