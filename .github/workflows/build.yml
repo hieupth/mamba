@@ -30,9 +30,9 @@ jobs:
         with:
           push: true
           context: .
-          tags: hieupth/minicuda:11.6.2-runtime
+          tags: hieupth/minicuda:11.4.3-runtime
           build-args: |
-            NV_CUDA=11.6.2
+            NV_CUDA=11.4.3
             NV_CUDNN=8
             NV_OS=ubuntu20.04
             NV_FLAVOR=runtime
@@ -42,9 +42,9 @@ jobs:
         with:
           push: true
           context: .
-          tags: hieupth/minicuda:11.6.2-devel
+          tags: hieupth/minicuda:11.4.3-devel
           build-args: |
-            NV_CUDA=11.6.2
+            NV_CUDA=11.4.3
             NV_CUDNN=8
             NV_OS=ubuntu20.04
             NV_FLAVOR=devel
