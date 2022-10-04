@@ -25,7 +25,19 @@ jobs:
         name: Checkout
         uses: actions/checkout@v2
       -
-        name: Build and push runtime image
+        name: Build and push runtime image 11.4
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          context: .
+          tags: hieupth/minicuda:11.4.3-runtime
+          build-args: |
+            NV_CUDA=11.4.3
+            NV_CUDNN=8
+            NV_OS=ubuntu20.04
+            NV_FLAVOR=runtime
+      -
+        name: Build and push runtime image 11.6
         uses: docker/build-push-action@v3
         with:
           push: true
@@ -37,7 +49,19 @@ jobs:
             NV_OS=ubuntu20.04
             NV_FLAVOR=runtime
       -
-        name: Build and push devel image
+        name: Build and push devel image 11.4
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          context: .
+          tags: hieupth/minicuda:11.4.3-devel
+          build-args: |
+            NV_CUDA=11.4.3
+            NV_CUDNN=8
+            NV_OS=ubuntu20.04
+            NV_FLAVOR=devel
+      -
+        name: Build and push devel image 11.6
         uses: docker/build-push-action@v3
         with:
           push: true
