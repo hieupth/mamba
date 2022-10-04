@@ -11,14 +11,16 @@ ARG NV_OS=ubuntu20.04
 ARG NV_FLAVOR=runtime
 # The image will be built from suitable Nvidia's CUDA images.
 FROM nvidia/cuda:${NV_CUDA}-cudnn${NV_CUDNN}-${NV_FLAVOR}-${NV_OS}
-
+ARG NV_CUDA
 # -----------------------------------------------------------------------------
 # GENERAL SETTINGS
 # -----------------------------------------------------------------------------
 # Deactive interactive UI.
 ENV DEBIAN_FRONTEND=noninteractive
 # Install common packages
+SHELL ["/bin/bash", "-c"]
 RUN apt-get update > /dev/null && \
+    NV_CUDA=${NV_CUDA//./-}; apt-get install cuda-cupti-${NV_CUDA:0:-2} -y && \
     apt-get install --no-install-recommends --yes \
         git wget curl bzip2 cmake ca-certificates build-essential > /dev/null && \
     apt-get clean && \
