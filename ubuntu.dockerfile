@@ -1,6 +1,9 @@
 ARG BASE=ubuntu:22.04
+ARG MINIFORGE_NAME=Mambaforge
 
 FROM ${BASE}
+# Recall build args.
+ARG MINIFORGE_NAME
 # Disable interactive mode.
 ENV DEBIAN_FRONTEND=noninteractive
 # Install required packages.
@@ -12,8 +15,6 @@ RUN apt-get update --yes && \
         ca-certificates && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
-# Set mambaforge.
-ARG MINIFORGE_NAME=Mambaforge
 # Set envs.
 ENV CONDA_DIR=/opt/conda
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8

@@ -11,6 +11,9 @@ on:
 jobs:
   build-ubuntu:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        interpreter: [cpython, pypy3]
     steps:
       - 
         name: Set up QEMU
@@ -29,6 +32,16 @@ jobs:
       - 
         name: Checkout
         uses: actions/checkout@v3
+      -
+        name: Make variable
+        run: |
+          if [[ "${{matrix.interpreter}}" != "cpython" ]]; then
+            echo "image_tag=:${{matrix.interpreter}}" >> $GITHUB_ENV
+            echo "mambaforge_name=Mambaforge-${{matrix.interpreter}}" >> $GITHUB_ENV
+          else
+            echo "image_tag=:latest" >> $GITHUB_ENV
+            echo "mambaforge_name=Mambaforge" >> $GITHUB_ENV
+          fi
       - 
         name: Build base images
         uses: docker/build-push-action@v3
@@ -36,7 +49,9 @@ jobs:
           push: true
           file: ubuntu.dockerfile
           platforms: linux/amd64,linux/arm64,linux/ppc64le
-          tags: ${{secrets.DOCKERHUB_USERNAME}}/mamba
+          tags: ${{secrets.DOCKERHUB_USERNAME}}/mamba${{env.image_tag}}
+          build-args: |
+            MAMBAFORGE_NAME=${{env.mambaforge_name}}
 
   build-cuda:
     runs-on: ubuntu-latest
