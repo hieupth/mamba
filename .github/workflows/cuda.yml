@@ -1,0 +1,50 @@
+name: Build CUDA image
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: [Build base image]
+    types: [completed]
+  push:
+    branches:
+      - 'main'
+    paths:
+      - '.github/workflows/cuda.yml'
+      - 'cuda.dockerfile'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        cuda: ['12.8.1']
+        cudnn: ['9.8.0']
+    steps:
+      - 
+        name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+      - 
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - 
+        name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{vars.DOCKERHUB_USERNAME}}
+          password: ${{secrets.DOCKERHUB_TOKEN}}
+      - 
+        name: Checkout
+        uses: actions/checkout@v4
+      - 
+        name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          file: cuda.dockerfile
+          platforms: linux/amd64,linux/arm64
+          tags: ${{vars.DOCKERHUB_USERNAME}}/mamba:cuda
+          build-args: |
+            CUDA=${{matrix.cuda}}
+            CUDNN=${{matrix.cudnn}}
