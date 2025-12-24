@@ -1,11 +1,10 @@
-ARG MINIFORGE=Miniforge3
-ARG UBUNTU=latest
+ARG BASE_IMAGE=ubuntu:24.04
 ARG PACKAGES
 
-FROM ubuntu:${UBUNTU}
+
+FROM ${BASE_IMAGE}
 # Recall build args.
 ARG PACKAGES
-ARG MINIFORGE
 # Useful envinronment.
 ENV DEBIAN_FRONTEND=noninteractive
 # Install required packages.
@@ -26,15 +25,14 @@ ENV CONDA_DIR=/opt/conda
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 ENV PATH=${CONDA_DIR}/bin:${PATH}
 # Install miniforge.
-RUN curl -L -O https://github.com/conda-forge/miniforge/releases/latest/download/${MINIFORGE}-$(uname)-$(uname -m).sh && \
-    chmod +x /${MINIFORGE}-$(uname)-$(uname -m).sh && \
-    /${MINIFORGE}-$(uname)-$(uname -m).sh -b -p ${CONDA_DIR} && \
-    rm /${MINIFORGE}-$(uname)-$(uname -m).sh && \
+RUN curl -L -O https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh && \
+    chmod +x /Miniforge3-$(uname)-$(uname -m).sh && \
+    /Miniforge3-$(uname)-$(uname -m).sh -b -p ${CONDA_DIR} && \
+    rm /Miniforge3-$(uname)-$(uname -m).sh && \
     echo ". ${CONDA_DIR}/etc/profile.d/conda.sh && conda activate base" >> /etc/skel/.bashrc && \
     echo ". ${CONDA_DIR}/etc/profile.d/conda.sh && conda activate base" >> ~/.bashrc && \
-    mamba clean -ay
+    conda clean -ay
 # Set tini.
 ENTRYPOINT ["tini", "-g", "--"]
-COPY bin/utils/os_release.py /usr/bin/utils/os_release.py
 # Set command.
 CMD ["/bin/bash"]

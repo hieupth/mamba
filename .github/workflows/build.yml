@@ -1,0 +1,60 @@
+name: build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['main']
+    paths:
+      - ".github/workflows/build.yml"
+      - "dockerfile"
+      - "scripts/*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        release: ["25.11"]
+    steps:
+      - 
+        name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+      - 
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - 
+        name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - 
+        name: Checkout
+        uses: actions/checkout@v4
+      - 
+        name: Resolve BASE_IMAGE from NVIDIA release notes
+        id: base
+        shell: bash
+        env:
+          NV_RELEASE: ${{ matrix.release }}
+        run: |
+          set -euo pipefail
+          chmod +x scripts/read_nv_release_stack.sh
+          UBUNTU_VERSION="$(scripts/read_nv_release_stack.sh "${NV_RELEASE}" --key ubuntu_version)"
+          if [[ -z "${UBUNTU_VERSION}" ]]; then
+            echo "ERROR: ubuntu_version is empty (NV_RELEASE=${NV_RELEASE})" >&2
+            exit 1
+          fi
+          echo "base_image=ubuntu:${UBUNTU_VERSION}" >> "${GITHUB_OUTPUT}"
+      - 
+        name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          file: dockerfile
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ vars.DOCKERHUB_USERNAME }}/mamba:${{ matrix.release }}
+          build-args: |
+            BASE_IMAGE=${{ steps.base.outputs.base_image }}
