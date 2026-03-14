@@ -2,46 +2,84 @@ name: Build
 
 on:
   workflow_dispatch:
+    inputs:
+      from_tag:
+        description: 'Build from tag (e.g., 25.11)'
+        required: false
+        default: '26.01'
+      build_mode:
+        description: 'Build mode'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - latest
+          - all
   push:
     branches: ['main']
     paths:
       - ".github/workflows/build.yml"
+      - ".github/workflows/scripts/*"
       - "dockerfile"
+      - "scripts/*"
 
 jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate build matrix
+        id: matrix
+        env:
+          FROM_TAG: ${{ inputs.from_tag || '25.11' }}
+          BUILD_MODE: ${{ inputs.build_mode || 'all' }}
+        run: |
+          cd .github/workflows/scripts
+          MATRIX=$(./build-matrix.sh)
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+          echo "Generated matrix: $MATRIX"
+
   build:
+    needs: detect
     runs-on: ubuntu-latest
     strategy:
-      matrix:
-        ubuntu: [24.04]
-        miniforge: [25.11.0-1]
+      fail-fast: false
+      matrix: ${{ fromJson(needs.detect.outputs.matrix) }}
     steps:
-      - 
-        name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: all
-      - 
-        name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - 
-        name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{vars.DOCKERHUB_USERNAME}}
-          password: ${{secrets.DOCKERHUB_TOKEN}}
-      - 
-        name: Checkout
+      - name: Checkout
         uses: actions/checkout@v4
-      - 
-        name: Build and push
-        uses: docker/build-push-action@v5
+
+      - name: Generate image tags
+        id: tags
+        run: |
+          TAGS="${{ vars.DOCKERHUB_USERNAME }}/mamba:${{ matrix.tag }}"
+          if [ "${{ matrix.is_latest }}" = "true" ]; then
+            TAGS="$TAGS,${{ vars.DOCKERHUB_USERNAME }}/mamba:latest"
+          fi
+          echo "tags=$TAGS"
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+
+      - name: Prepare Docker environment
+        uses: hieupth/gh-docker-actions/docker-prepare@main
         with:
-          push: true
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          free_disk_space: "false"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
           file: dockerfile
           platforms: linux/amd64,linux/arm64
-          tags: ${{vars.DOCKERHUB_USERNAME}}/mamba:${{matrix.ubuntu}}
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
           build-args: |
-            UBUNTU_VERSION=${{matrix.ubuntu}}
-            MINIFORGE_VERSION=${{matrix.miniforge}}
-            
+            UBUNTU_VERSION=${{ matrix.ubuntu }}
+            MINIFORGE_VERSION=${{ matrix.version }}
+          cache-from: ""
+          cache-to: ""
