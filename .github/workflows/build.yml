@@ -2,46 +2,36 @@ name: Build
 
 on:
   workflow_dispatch:
+    inputs:
+      packages:
+        description: 'Additional apt packages to install (space-separated)'
+        required: false
+        default: ''
   push:
     branches: ['main']
     paths:
       - ".github/workflows/build.yml"
       - "dockerfile"
+      - "scripts/*"
 
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        ubuntu: [24.04]
-        miniforge: [25.11.0-1]
+        # Ubuntu bases; each value is both the base tag and the published tag.
+        # `latest` tracks Canonical's newest LTS.
+        ubuntu: [latest, resolute, noble]
     steps:
-      - 
-        name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+      - name: Build and push
+        uses: hieupth/gha-docker/build@1ab142fc109fc43357975bb0c14c567297747d7a # v0.1
         with:
-          platforms: all
-      - 
-        name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - 
-        name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{vars.DOCKERHUB_USERNAME}}
-          password: ${{secrets.DOCKERHUB_TOKEN}}
-      - 
-        name: Checkout
-        uses: actions/checkout@v4
-      - 
-        name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          push: true
-          file: dockerfile
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          image: ${{ vars.DOCKERHUB_USERNAME }}/mamba:${{ matrix.ubuntu }}
           platforms: linux/amd64,linux/arm64
-          tags: ${{vars.DOCKERHUB_USERNAME}}/mamba:${{matrix.ubuntu}}
-          build-args: |
-            UBUNTU_VERSION=${{matrix.ubuntu}}
-            MINIFORGE_VERSION=${{matrix.miniforge}}
-            
+          dockerfile: dockerfile
+          build_args: |
+            UBUNTU_VERSION=${{ matrix.ubuntu }}
+            PACKAGES=${{ inputs.packages }}
